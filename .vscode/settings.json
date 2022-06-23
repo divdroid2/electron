@@ -1,0 +1,8 @@
+{
+    "githubPullRequests.ignoredPrBranches": [
+        "main"
+    ],
+    "editor.unicodeHighlight.nonBasicASCII": false,
+    "editor.unicodeHighlight.includeComments": false,
+    "terminal.integrated.shellIntegration.enabled": true
+}
