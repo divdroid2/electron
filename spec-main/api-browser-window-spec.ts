@@ -1996,6 +1996,42 @@ describe('BrowserWindow module', () => {
       w.setWindowButtonVisibility(false);
       expect(w._getWindowButtonVisibility()).to.equal(false);
     });
+
+    it('correctly updates when entering/exiting fullscreen for hidden style', async () => {
+      const w = new BrowserWindow({ show: false, frame: false, titleBarStyle: 'hidden' });
+      expect(w._getWindowButtonVisibility()).to.equal(true);
+      w.setWindowButtonVisibility(false);
+      expect(w._getWindowButtonVisibility()).to.equal(false);
+
+      const enterFS = emittedOnce(w, 'enter-full-screen');
+      w.setFullScreen(true);
+      await enterFS;
+
+      const leaveFS = emittedOnce(w, 'leave-full-screen');
+      w.setFullScreen(false);
+      await leaveFS;
+
+      w.setWindowButtonVisibility(true);
+      expect(w._getWindowButtonVisibility()).to.equal(true);
+    });
+
+    it('correctly updates when entering/exiting fullscreen for hiddenInset style', async () => {
+      const w = new BrowserWindow({ show: false, frame: false, titleBarStyle: 'hiddenInset' });
+      expect(w._getWindowButtonVisibility()).to.equal(true);
+      w.setWindowButtonVisibility(false);
+      expect(w._getWindowButtonVisibility()).to.equal(false);
+
+      const enterFS = emittedOnce(w, 'enter-full-screen');
+      w.setFullScreen(true);
+      await enterFS;
+
+      const leaveFS = emittedOnce(w, 'leave-full-screen');
+      w.setFullScreen(false);
+      await leaveFS;
+
+      w.setWindowButtonVisibility(true);
+      expect(w._getWindowButtonVisibility()).to.equal(true);
+    });
   });
 
   ifdescribe(process.platform === 'darwin')('BrowserWindow.setVibrancy(type)', () => {
@@ -2027,7 +2063,8 @@ describe('BrowserWindow module', () => {
       }).to.not.throw();
     });
 
-    it('Allows setting a transparent window via CSS', async () => {
+    // TODO(nornagon): disabled due to flakiness.
+    it.skip('Allows setting a transparent window via CSS', async () => {
       const appPath = path.join(__dirname, 'fixtures', 'apps', 'background-color-transparent');
 
       appProcess = childProcess.spawn(process.execPath, [appPath], {
@@ -2679,7 +2716,7 @@ describe('BrowserWindow module', () => {
         for (const isolatedGlobal of isolated.globals) {
           notIsolatedGlobals.delete(isolatedGlobal);
         }
-        expect([...notIsolatedGlobals]).to.deep.equal([], 'non-isoalted renderer should have no additional globals');
+        expect([...notIsolatedGlobals]).to.deep.equal([], 'non-isolated renderer should have no additional globals');
       });
 
       it('loads the script before other scripts in window', async () => {
@@ -3263,7 +3300,15 @@ describe('BrowserWindow module', () => {
         });
         w.webContents.setWindowOpenHandler(() => ({
           action: 'allow',
-          overrideBrowserWindowOptions: { show: false, webPreferences: { contextIsolation: false, webviewTag: true, nodeIntegrationInSubFrames: true } }
+          overrideBrowserWindowOptions: {
+            show: false,
+            webPreferences: {
+              contextIsolation: false,
+              webviewTag: true,
+              nodeIntegrationInSubFrames: true,
+              preload
+            }
+          }
         }));
 
         const webviewLoaded = emittedOnce(ipcMain, 'webview-loaded');

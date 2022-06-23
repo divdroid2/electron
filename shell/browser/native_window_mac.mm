@@ -317,7 +317,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   params.bounds = bounds;
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
-  params.native_widget = new ElectronNativeWidgetMac(this, styleMask, widget());
+  params.native_widget =
+      new ElectronNativeWidgetMac(this, windowType, styleMask, widget());
   widget()->Init(std::move(params));
   SetCanResize(resizable);
   window_ = static_cast<ElectronNSWindow*>(
@@ -353,6 +354,10 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
     [window_ setCollectionBehavior:(NSWindowCollectionBehaviorCanJoinAllSpaces |
                                     NSWindowCollectionBehaviorStationary |
                                     NSWindowCollectionBehaviorIgnoresCycle)];
+  }
+
+  if (windowType == "panel") {
+    [window_ setLevel:NSFloatingWindowLevel];
   }
 
   bool focusable;
@@ -807,6 +812,7 @@ void NativeWindowMac::MoveTop() {
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
+  ScopedDisableResize disable_resize;
   SetStyleMask(resizable, NSWindowStyleMaskResizable);
   SetCanResize(resizable);
 }
@@ -1511,12 +1517,15 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 
 void NativeWindowMac::SetWindowButtonVisibility(bool visible) {
   window_button_visibility_ = visible;
-  // The visibility of window buttons are managed by |buttons_proxy_| if the
-  // style is customButtonsOnHover.
-  if (title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover)
+  if (buttons_proxy_) {
+    if (visible)
+      [buttons_proxy_ redraw];
     [buttons_proxy_ setVisible:visible];
-  else
+  }
+
+  if (title_bar_style_ != TitleBarStyle::kCustomButtonsOnHover)
     InternalSetWindowButtonVisibility(visible);
+
   NotifyLayoutWindowControlsOverlay();
 }
 
